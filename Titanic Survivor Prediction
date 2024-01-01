@@ -1,0 +1,87 @@
+import pandas as pd
+import numpy as np
+import matplotlib.pyplot as plt 
+import seaborn as sns
+%matplotlib inline
+
+
+table=pd.read_csv("titanic_trainingset.csv")
+table.head(10)
+
+
+sns.set_style('whitegrid')
+sns.countplot(x='Survived',data=table)
+
+sns.set_style('whitegrid')
+sns.countplot(x='Survived',hue='Sex',data=table)
+
+sns.distplot(table['Age'].dropna(),kde=False,bins=20,color='green')
+
+plt.figure(figsize=(8,6))
+sns.boxplot(x='Pclass',y='Age',data=table)
+
+
+def replace_age(cols):
+    Age=cols[0]
+    Pclass=cols[1]
+    if(pd.isnull(Age)):
+        
+        if(Pclass==1):
+            return 37
+        
+        if(Pclass==2):
+            return 29
+        
+        if(Pclass==3):
+            return 25
+    else:
+        return Age
+
+
+
+table['Age']=table[['Age','Pclass']].apply(replace_age,axis=1)
+
+table.drop('Cabin',axis=1,inplace=True)
+
+sns.heatmap(table.isnull(),yticklabels=False,cbar=False)
+
+embark=pd.get_dummies(table['Embarked'],drop_first=True)
+sex=pd.get_dummies(table['Sex'])
+
+
+table.drop(['Name','Sex','Embarked','Ticket'],axis=1,inplace=True)
+table.head(10)
+
+table=pd.concat([table,sex,embark],axis=1)
+table
+
+table.drop(['Survived'],axis=1)
+
+table['Survived'].head()
+
+from sklearn.model_selection import train_test_split
+
+X_train,X_test,y_train,y_test=train_test_split(table.drop('Survived',axis=1),table['Survived'],random_state=101)
+
+test_data=pd.read_csv("titanic_test_data.csv")
+
+ from sklearn.linear_model import LogisticRegression
+
+mod=LogisticRegression()
+mod.fit(X_train,y_train)
+
+prediction=mod.predict(X_test)
+
+from sklearn.metrics import confusion_matrix,accuracy_score
+
+accuracy=confusion_matrix(y_test,prediction)
+accuracy
+
+accuracy=accuracy_score(y_test,prediction)
+print(accuracy)
+
+print(prediction)
+
+df=pd.DataFrame(test_data['PassengerId'])
+df['Survived']=prediction
+df.to_csv("prediction.csv",index=False)
